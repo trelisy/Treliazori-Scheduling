@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treliazori Scheduling</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #C9A84C;
+  --accent-light: #E8C96A;
+  --accent-rgb: 201,168,76;
+  --film: #1a1a1a;
+  --border: rgba(var(--accent-rgb),0.25);
+  --border-strong: rgba(var(--accent-rgb),0.6);
+  --text: #F0EBE0;
+  --muted: rgba(240,235,224,0.5);
+  --red: #E24B4A; --green: #639922; --blue: #378ADD; --teal: #1D9E75; --purple: #7F77DD;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--film);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;height:100vh;overflow:hidden;}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.topbar{background:#111;border-bottom:1px solid var(--border-strong);display:flex;align-items:center;height:44px;flex-shrink:0;padding:0 8px;}
+.topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);letter-spacing:3px;padding:0 16px 0 8px;border-right:1px solid var(--border);white-space:nowrap;}
+.topbar-logo span{color:var(--text);font-size:14px;letter-spacing:1px;}
+.nav-tabs{display:flex;gap:2px;padding:0 8px;}
+.nav-tab{background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border-radius:4px;cursor:pointer;transition:all 0.15s;}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,0.05);}
+.nav-tab.active{color:var(--accent);background:rgba(var(--accent-rgb),0.1);}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.btn{border:1px solid var(--border-strong);background:rgba(var(--accent-rgb),0.08);color:var(--accent);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;padding:5px 12px;border-radius:4px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.btn:hover{background:rgba(var(--accent-rgb),0.2);}
+.btn.danger{border-color:rgba(226,75,74,0.5);color:var(--red);background:rgba(226,75,74,0.06);}
+.btn.danger:hover{background:rgba(226,75,74,0.15);}
+.btn.primary{background:var(--accent);color:#111;border-color:var(--accent);font-weight:600;}
+.btn.primary:hover{filter:brightness(1.1);}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted);}
+.btn.ghost:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+.main{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:220px;flex-shrink:0;background:#1c1c1c;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.sidebar-section{padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.sidebar-label{font-size:9px;letter-spacing:2px;font-weight:500;color:var(--accent);text-transform:uppercase;padding:0 14px 8px;}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:pointer;transition:background 0.1s;font-size:12px;color:var(--muted);border:none;background:none;width:100%;text-align:left;}
+.sidebar-item:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+.sidebar-item.active{background:rgba(var(--accent-rgb),0.08);color:var(--accent);}
+.sidebar-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sidebar-count{margin-left:auto;font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px;}
+.sidebar-empty{padding:8px 14px;font-size:11px;color:rgba(240,235,224,0.2);font-style:italic;}
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.toolbar{background:#1e1e1e;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:7px 14px;flex-shrink:0;flex-wrap:wrap;}
+.toolbar-group{display:flex;gap:4px;align-items:center;padding-right:8px;border-right:1px solid rgba(255,255,255,0.07);}
+.toolbar-group:last-child{border-right:none;}
+.tool-btn{background:none;border:1px solid transparent;color:var(--muted);border-radius:4px;padding:4px 9px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.12s;white-space:nowrap;}
+.tool-btn:hover{border-color:var(--border);color:var(--text);background:rgba(255,255,255,0.05);}
+.tool-btn.active{border-color:var(--border-strong);color:var(--accent);background:rgba(var(--accent-rgb),0.1);}
+select.tool-select{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;}
+.search-box{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 10px;font-size:11px;font-family:'DM Sans',sans-serif;outline:none;width:160px;}
+.search-box::placeholder{color:var(--muted);}
+.stripboard{flex:1;overflow:auto;padding:12px;}
+.day-group{margin-bottom:16px;}
+.day-header{display:flex;align-items:center;gap:12px;margin-bottom:6px;padding:6px 12px;background:#111;border-radius:4px;border-left:3px solid var(--accent);}
+.day-header-title{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--accent);letter-spacing:2px;}
+.day-header-date{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
+.strip{display:grid;grid-template-columns:4px 50px 90px 1fr 110px 90px 60px 40px;gap:0;margin-bottom:2px;border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:all 0.12s;}
+.strip:hover{border-color:rgba(var(--accent-rgb),0.3);transform:translateX(1px);}
+.strip.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
+.strip-cell{padding:5px 8px;font-size:11px;display:flex;align-items:center;border-right:1px solid rgba(255,255,255,0.04);font-family:'DM Mono',monospace;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.strip-cell:last-child{border-right:none;}
+.strip-title{font-family:'DM Sans',sans-serif;flex:1;}
+.strip-color-bar{padding:0;flex-shrink:0;}
+.type-day{background:rgba(240,235,224,0.05);}.type-day .strip-color-bar{background:#c8c0b0;}
+.type-night{background:rgba(55,138,221,0.08);}.type-night .strip-color-bar{background:var(--blue);}
+.type-ext{background:rgba(99,153,34,0.08);}.type-ext .strip-color-bar{background:var(--green);}
+.type-int{background:rgba(127,119,221,0.07);}.type-int .strip-color-bar{background:var(--purple);}
+.banner-strip{grid-template-columns:1fr!important;background:rgba(var(--accent-rgb),0.06);border:1px solid var(--border);border-radius:3px;margin-bottom:4px;}
+.banner-strip .strip-cell{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--accent);justify-content:center;padding:7px 8px;}
+.badge{font-size:9px;padding:2px 5px;border-radius:2px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.badge-day{background:rgba(240,235,224,0.12);color:#c8c0b0;}
+.badge-night{background:rgba(55,138,221,0.2);color:#7BB8F0;}
+.badge-ext{background:rgba(99,153,34,0.2);color:#90C53A;}
+.badge-int{background:rgba(127,119,221,0.2);color:#AFA9EC;}
+.strip-header{display:grid;grid-template-columns:4px 50px 90px 1fr 110px 90px 60px 40px;gap:0;margin-bottom:4px;padding:0 0 4px;border-bottom:1px solid var(--border);}
+.strip-header-cell{padding:0 8px;font-size:9px;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;font-weight:500;}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;gap:14px;min-height:300px;}
+.empty-icon{font-size:44px;opacity:0.25;}
+.empty-title{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);letter-spacing:3px;}
+.empty-sub{font-size:12px;color:var(--muted);line-height:1.8;max-width:340px;}
+.empty-actions{display:flex;gap:10px;margin-top:6px;}
+.detail-panel{width:290px;flex-shrink:0;background:#1c1c1c;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;transition:width 0.2s;}
+.detail-panel.hidden{width:0;overflow:hidden;border:none;}
+.detail-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.detail-scene-num{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);letter-spacing:2px;}
+.detail-title{font-size:13px;font-weight:500;margin-top:2px;line-height:1.4;}
+.detail-sub{font-size:11px;color:var(--muted);margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;}
+.detail-body{padding:14px 16px;flex:1;}
+.detail-section{margin-bottom:16px;}
+.detail-label{font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;font-weight:500;margin-bottom:8px;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.detail-field{background:rgba(255,255,255,0.03);border-radius:4px;padding:8px 10px;}
+.detail-field-label{font-size:9px;color:var(--muted);margin-bottom:3px;}
+.detail-field-value{font-size:12px;font-family:'DM Mono',monospace;color:var(--text);}
+.cast-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.cast-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.05);border-radius:3px;padding:3px 8px;font-size:11px;}
+.cast-num{font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--accent);}
+.element-list{display:flex;flex-direction:column;gap:4px;}
+.element-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);padding:3px 0;}
+.element-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.notes-area{width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:8px;font-size:12px;font-family:'DM Sans',sans-serif;resize:none;outline:none;min-height:70px;}
+.notes-area:focus{border-color:var(--accent);}
+.stats-bar{background:#111;border-top:1px solid var(--border);display:flex;align-items:center;padding:0;flex-shrink:0;height:30px;overflow-x:auto;}
+.stat-item{display:flex;align-items:center;gap:6px;padding:0 14px;font-size:11px;border-right:1px solid rgba(255,255,255,0.06);height:100%;white-space:nowrap;}
+.stat-label{color:var(--muted);}
+.stat-value{color:var(--accent);font-family:'DM Mono',monospace;font-weight:500;}
+.calendar-view,.cast-view,.reports-view,.settings-view{flex:1;overflow:auto;padding:16px;display:none;}
+.stripboard-view{flex:1;overflow:hidden;display:none;flex-direction:column;}
+.stripboard-view.visible{display:flex;}
+.cal-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.cal-month{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);letter-spacing:3px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-day-label{text-align:center;font-size:10px;letter-spacing:1px;color:var(--accent);text-transform:uppercase;padding:4px;font-weight:500;}
+.cal-cell{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:4px;padding:6px;min-height:80px;cursor:pointer;transition:border-color 0.12s;}
+.cal-cell:hover{border-color:var(--border);}
+.cal-cell.shoot-day{background:rgba(var(--accent-rgb),0.06);border-color:var(--border);}
+.cal-cell.off-day{background:rgba(226,75,74,0.04);}
+.cal-date{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px;}
+.cal-cell.shoot-day .cal-date{color:var(--accent);}
+.cal-event{font-size:9px;padding:2px 4px;border-radius:2px;margin-bottom:2px;color:#111;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cast-table{width:100%;border-collapse:collapse;}
+.cast-table th{text-align:left;padding:8px 12px;font-size:9px;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;border-bottom:1px solid var(--border);font-weight:500;}
+.cast-table td{padding:9px 12px;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.cast-table tr:hover td{background:rgba(255,255,255,0.03);}
+.avail-block{display:inline-block;width:20px;height:14px;border-radius:2px;margin-right:2px;vertical-align:middle;}
+.reports-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.report-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:16px;cursor:pointer;transition:all 0.15s;}
+.report-card:hover{border-color:var(--border-strong);background:rgba(var(--accent-rgb),0.05);}
+.report-icon{font-size:20px;margin-bottom:8px;}
+.report-name{font-size:13px;font-weight:500;margin-bottom:4px;}
+.report-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+
+/* PROJECT MANAGER MODAL */
+.proj-list{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;margin-bottom:12px;}
+.proj-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;padding:9px 12px;cursor:pointer;transition:border-color 0.12s;}
+.proj-item:hover{border-color:var(--border-strong);}
+.proj-item-name{font-size:12px;font-weight:500;flex:1;}
+.proj-item-meta{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
+.proj-item-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:3px;opacity:0.6;transition:opacity 0.1s;}
+.proj-item-del:hover{opacity:1;background:rgba(226,75,74,0.1);}
+.autosave-badge{font-size:9px;color:var(--green);font-family:'DM Mono',monospace;padding:2px 6px;background:rgba(99,153,34,0.12);border-radius:3px;border:1px solid rgba(99,153,34,0.3);}
+
+/* PRINT / PDF */
+@media print{
+  @page{size:A4;margin:12mm 14mm;}
+  html,body{background:#fff!important;color:#111!important;font-size:11px!important;height:auto!important;overflow:visible!important;}
+  .app,.main,.content{display:block!important;height:auto!important;overflow:visible!important;}
+  .topbar,.toolbar,.sidebar,.stats-bar,.detail-panel,.modal-overlay,
+  #view-calendar,#view-cast,#view-reports,#view-settings,
+  .stripboard-view .toolbar,#stripHeaderWrap .strip-header-cell,
+  button,.btn,.tool-btn,.nav-tab,.topbar-actions,.sidebar-section{display:none!important;}
+  .stripboard-view{display:block!important;overflow:visible!important;}
+  #stripboard{overflow:visible!important;padding:0!important;}
+  .strip{border:1px solid #ccc!important;margin-bottom:1px!important;break-inside:avoid;transform:none!important;}
+  .strip-cell{color:#111!important;border-right:1px solid #ddd!important;}
+  .type-day{background:#f9f7f3!important;}
+  .type-night{background:#e8f0fa!important;}
+  .type-ext{background:#eef5e6!important;}
+  .type-int{background:#f0eff9!important;}
+  .strip-color-bar{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+  .day-group{break-inside:avoid;}
+  .day-header{background:#eee!important;border-left-color:inherit!important;border-radius:0!important;margin-bottom:2px!important;}
+  .day-header-title{color:#333!important;}
+  .badge{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+  .banner-strip{background:#f5f0e0!important;border:1px solid #ccc!important;}
+  .banner-strip .strip-cell{color:#555!important;}
+  /* Print header */
+  .print-header{display:block!important;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #333;}
+  .print-header h1{font-size:20px;font-weight:700;margin-bottom:2px;}
+  .print-header p{font-size:10px;color:#666;}
+  #stripHeaderWrap{display:block!important;padding:0!important;margin-bottom:4px!important;}
+  .strip-header{border-bottom:1px solid #bbb!important;}
+  .strip-header-cell{color:#333!important;font-size:8px!important;}
+}
+.print-header{display:none;}
+
+/* SETTINGS */
+.settings-page{max-width:720px;}
+.settings-page-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);letter-spacing:2px;margin-bottom:20px;}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.settings-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:18px;}
+.settings-card-title{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--accent);letter-spacing:2px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);gap:12px;}
+.setting-row:last-child{border-bottom:none;padding-bottom:0;}
+.setting-row.col{flex-direction:column;align-items:flex-start;gap:8px;}
+.setting-label{font-size:12px;color:var(--text);flex-shrink:0;}
+.setting-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;border-radius:20px;background:rgba(255,255,255,0.1);cursor:pointer;transition:background 0.2s;}
+.toggle input:checked + .toggle-slider{background:var(--accent);}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:white;left:3px;top:3px;transition:transform 0.2s;}
+.toggle input:checked + .toggle-slider:before{transform:translateX(16px);}
+
+/* COLOR PICKER */
+.color-wheel-wrap{display:flex;align-items:center;gap:12px;}
+.color-swatch-btn{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0;transition:transform 0.12s;}
+.color-swatch-btn:hover{transform:scale(1.1);}
+.color-swatch-btn input[type=color]{position:absolute;inset:-6px;opacity:0;cursor:pointer;width:150%;height:150%;}
+.color-swatch-btn .swatch-fill{position:absolute;inset:0;pointer-events:none;border-radius:50%;}
+.preset-colors{display:flex;gap:6px;flex-wrap:wrap;}
+.preset-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.12s;flex-shrink:0;}
+.preset-dot:hover{transform:scale(1.15);}
+.preset-dot.active-p{border-color:white;transform:scale(1.1);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);display:none;align-items:center;justify-content:center;z-index:100;}
+.modal-overlay.open{display:flex;}
+.modal{background:#242424;border:1px solid var(--border-strong);border-radius:6px;padding:22px;width:520px;max-height:85vh;overflow-y:auto;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);letter-spacing:2px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:10px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.form-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.form-label{font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+.form-input{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:7px 10px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:100%;}
+.form-input:focus{border-color:var(--accent);}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
+
+/* SETUP SCREEN */
+.setup-screen{position:fixed;inset:0;background:#141414;display:flex;align-items:center;justify-content:center;z-index:200;}
+.setup-card{background:#1e1e1e;border:1px solid var(--border-strong);border-radius:8px;padding:36px 40px;width:500px;}
+.setup-logo{font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--accent);letter-spacing:5px;margin-bottom:2px;}
+.setup-tagline{font-size:11px;color:var(--muted);margin-bottom:28px;letter-spacing:2px;text-transform:uppercase;}
+.setup-subtitle{font-size:13px;font-weight:500;color:var(--text);margin-bottom:18px;}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-card">
+    <div class="setup-logo">Treliazori <span style="color:var(--text);font-size:20px;letter-spacing:2px;">/ Scheduling</span></div>
+    <div class="setup-tagline">Film Production Scheduler</div>
+    <div class="setup-subtitle">Start a new production</div>
+    <div class="form-field">
+      <div class="form-label">Production Title *</div>
+      <input class="form-input" id="setup_title" placeholder="e.g. The Last Horizon" style="font-size:14px;padding:10px 12px;" onkeydown="if(event.key==='Enter')startProduction()">
+    </div>
+    <div class="form-row">
+      <div class="form-field"><div class="form-label">Director</div><input class="form-input" id="setup_director" placeholder="Director name"></div>
+      <div class="form-field"><div class="form-label">Production Company</div><input class="form-input" id="setup_company" placeholder="Company"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><div class="form-label">Shoot Start Date</div><input class="form-input" id="setup_date" type="date"></div>
+      <div class="form-field"><div class="form-label">Number of Shoot Days</div><input class="form-input" id="setup_days" type="number" min="1" max="300" placeholder="e.g. 30"></div>
+    </div>
+    <div class="form-field" style="margin-bottom:22px">
+      <div class="form-label" style="margin-bottom:10px">Accent Color</div>
+      <div class="preset-colors" id="setup_presets" style="margin-bottom:10px"></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="color-swatch-btn" title="Custom color">
+          <div class="swatch-fill" id="setup_swatch" style="background:#C9A84C"></div>
+          <input type="color" id="setup_color" value="#C9A84C" oninput="previewAccent(this.value)">
+        </div>
+        <span style="font-size:11px;color:var(--muted)">or pick custom →</span>
+        <input class="form-input" id="setup_hex" style="width:110px;font-family:'DM Mono',monospace;font-size:12px;" value="#C9A84C" oninput="previewAccentHex(this.value)" placeholder="#C9A84C">
+      </div>
+    </div>
+    <button class="btn primary" onclick="startProduction()" style="width:100%;padding:12px;font-size:13px;letter-spacing:1px;">CREATE PRODUCTION</button>
+    <button class="btn" onclick="openProjectManager()" style="width:100%;margin-top:8px;padding:10px;font-size:12px;">📂 Load Saved Project</button>
+    <div id="setup_err" style="color:var(--red);font-size:11px;margin-top:8px;text-align:center;"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-logo" id="appTitle">Treliazori<span> / Scheduling</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active"  onclick="switchTab('stripboard')">Stripboard</button>
+      <button class="nav-tab"         onclick="switchTab('calendar')">Calendar</button>
+      <button class="nav-tab"         onclick="switchTab('cast')">Cast & Crew</button>
+      <button class="nav-tab"         onclick="switchTab('reports')">Reports</button>
+      <button class="nav-tab"         onclick="switchTab('settings')">⚙ Settings</button>
+    </div>
+    <div class="topbar-actions">
+      <span class="autosave-badge" id="autosaveBadge" style="display:none">✓ Saved</span>
+      <button class="btn ghost" onclick="openProjectManager()">☰ Projects</button>
+      <button class="btn" onclick="saveProject()">💾 Save</button>
+      <button class="btn" onclick="openModal('scene')">+ Add Scene</button>
+      <button class="btn" onclick="openModal('day')">+ Shoot Day</button>
+      <button class="btn primary" onclick="exportBoard()">⬇ Export PDF</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Production</div>
+        <button class="sidebar-item active" id="sidebarAllBtn" onclick="showAll(this)">
+          <div class="sidebar-dot" style="background:var(--accent)"></div>
+          <span id="sidebarTitle" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">Production</span>
+          <span class="sidebar-count" id="totalCount">0</span>
+        </button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Shoot Days</div>
+        <div id="sidebarDays"><div class="sidebar-empty">No shoot days yet</div></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Locations</div>
+        <div id="sidebarLocs"><div class="sidebar-empty">No locations yet</div></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Cast Members</div>
+        <div id="sidebarCast"><div class="sidebar-empty">No cast yet</div></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- STRIPBOARD -->
+      <div class="stripboard-view visible" id="view-stripboard">
+        <div class="print-header" id="printHeader">
+          <h1 id="printTitle">—</h1>
+          <p id="printMeta">—</p>
+        </div>
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <input class="search-box" placeholder="Search scenes, locations..." oninput="filterStrips(this.value)">
+          </div>
+          <div class="toolbar-group">
+            <button class="tool-btn active" id="sortScript" onclick="setSortMode('script',this)">Script Order</button>
+            <button class="tool-btn"         id="sortSched"  onclick="setSortMode('schedule',this)">Schedule Order</button>
+          </div>
+          <div class="toolbar-group">
+            <select class="tool-select" onchange="filterType(this.value)">
+              <option value="">All Types</option>
+              <option>INT/DAY</option><option>INT/NIGHT</option><option>EXT/DAY</option><option>EXT/NIGHT</option>
+            </select>
+          </div>
+          <div class="toolbar-group">
+            <button class="tool-btn" onclick="openModal('banner')">+ Banner</button>
+            <button class="tool-btn" onclick="openModal('scene')">+ Scene</button>
+          </div>
+          <div class="toolbar-group">
+            <button class="tool-btn" id="detailToggle" onclick="toggleDetail()">Details ▶</button>
+          </div>
+        </div>
+        <div style="display:flex;flex:1;overflow:hidden;">
+          <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+            <div id="stripHeaderWrap" style="padding:0 12px;flex-shrink:0;margin-top:8px;display:none;">
+              <div class="strip-header">
+                <div class="strip-header-cell"></div>
+                <div class="strip-header-cell">Scene</div><div class="strip-header-cell">Type</div>
+                <div class="strip-header-cell">Description</div><div class="strip-header-cell">Location</div>
+                <div class="strip-header-cell">Cast</div><div class="strip-header-cell">Pages</div><div class="strip-header-cell">Day</div>
+              </div>
+            </div>
+            <div class="stripboard" id="stripboard"></div>
+          </div>
+          <div class="detail-panel hidden" id="detailPanel">
+            <div class="detail-header" id="detailHeader"><div style="color:var(--muted);font-size:12px;padding:4px 0;">Select a scene to view details</div></div>
+            <div class="detail-body" id="detailBody"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALENDAR -->
+      <div class="calendar-view" id="view-calendar">
+        <div class="cal-header">
+          <div class="cal-month" id="calMonthLabel">—</div>
+          <button class="btn" onclick="calNav(-1)">◀ Prev</button>
+          <button class="btn" onclick="calNav(1)">Next ▶</button>
+          <button class="btn primary" style="margin-left:auto;" onclick="openModal('scene')">+ Add Scene</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+
+      <!-- CAST -->
+      <div class="cast-view" id="view-cast">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);letter-spacing:2px;">Cast & Crew — Day Out of Days</div>
+          <button class="btn primary" onclick="openModal('cast')" style="margin-left:auto;">+ Add Cast Member</button>
+        </div>
+        <div id="castViewContent"></div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="reports-view" id="view-reports">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);letter-spacing:2px;margin-bottom:16px;">Production Reports</div>
+        <div class="reports-grid">
+          <div class="report-card" onclick="showReport('One-Liner')"><div class="report-icon">📋</div><div class="report-name">One-Liner</div><div class="report-desc">Scene-by-scene summary with locations, cast, and page count</div></div>
+          <div class="report-card" onclick="showReport('Day Out of Days')"><div class="report-icon">📅</div><div class="report-name">Day Out of Days</div><div class="report-desc">Cast availability matrix across all shoot days</div></div>
+          <div class="report-card" onclick="showReport('Call Sheet')"><div class="report-icon">📞</div><div class="report-name">Call Sheet</div><div class="report-desc">Daily call times, crew contacts, and scene breakdown</div></div>
+          <div class="report-card" onclick="showReport('Shooting Schedule')"><div class="report-icon">🎬</div><div class="report-name">Shooting Schedule</div><div class="report-desc">Full production schedule with locations and logistics</div></div>
+          <div class="report-card" onclick="showReport('Props List')"><div class="report-icon">🎭</div><div class="report-name">Props List</div><div class="report-desc">All props by scene, department, and status</div></div>
+          <div class="report-card" onclick="showReport('Location Report')"><div class="report-icon">📍</div><div class="report-name">Location Report</div><div class="report-desc">All locations with addresses, permits, and shoot days</div></div>
+          <div class="report-card" onclick="showReport('Budget Fringe')"><div class="report-icon">💰</div><div class="report-name">Budget Fringe</div><div class="report-desc">Cast costs by day with fringe calculations</div></div>
+          <div class="report-card" onclick="showReport('Vehicle Report')"><div class="report-icon">🚗</div><div class="report-name">Vehicle Report</div><div class="report-desc">Picture vehicles and transport required per scene</div></div>
+          <div class="report-card" onclick="showReport('VFX Breakdown')"><div class="report-icon">✨</div><div class="report-name">VFX Breakdown</div><div class="report-desc">Visual effects shots by scene with complexity rating</div></div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);">* Reports export as PDF with full production data.</p>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="settings-view" id="view-settings">
+        <div class="settings-page">
+          <div class="settings-page-title">Settings</div>
+          <div class="settings-grid">
+
+            <!-- ACCENT COLOR -->
+            <div class="settings-card" style="grid-column:1/-1;">
+              <div class="settings-card-title">Accent Color</div>
+              <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;">
+                <div>
+                  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Preset colors</div>
+                  <div class="preset-colors" id="mainPresets"></div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Color wheel</div>
+                  <div class="color-wheel-wrap">
+                    <div class="color-swatch-btn" style="width:42px;height:42px;" title="Open color picker">
+                      <div class="swatch-fill" id="mainSwatchFill" style="background:var(--accent)"></div>
+                      <input type="color" id="mainColorPicker" value="#C9A84C" oninput="applyAccent(this.value)">
+                    </div>
+                    <span style="font-size:11px;color:var(--muted);">Click to open wheel</span>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Hex value</div>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <input class="form-input" id="hexInput" style="width:120px;font-family:'DM Mono',monospace;font-size:12px;" value="#C9A84C" oninput="applyAccentHex(this.value)" placeholder="#C9A84C">
+                    <button class="btn" onclick="applyAccent(document.getElementById('hexInput').value)">Apply</button>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Preview — current accent</div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  <div style="background:var(--accent);color:#111;font-family:'Bebas Neue';font-size:14px;letter-spacing:2px;padding:5px 14px;border-radius:4px;">Primary Button</div>
+                  <div style="border:1px solid var(--accent);color:var(--accent);font-size:11px;padding:5px 12px;border-radius:4px;background:rgba(var(--accent-rgb),0.08);">Secondary</div>
+                  <div style="font-family:'Bebas Neue';font-size:18px;color:var(--accent);letter-spacing:2px;">HEADING TEXT</div>
+                  <div style="font-size:10px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;">Label Style</div>
+                  <div style="width:32px;height:4px;border-radius:2px;background:var(--accent);"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PRODUCTION INFO -->
+            <div class="settings-card">
+              <div class="settings-card-title">Production Info</div>
+              <div class="setting-row col">
+                <div class="setting-label">Title</div>
+                <input class="form-input" id="settings_title" style="width:100%;" oninput="updateProductionInfo()">
+              </div>
+              <div class="setting-row col">
+                <div class="setting-label">Director</div>
+                <input class="form-input" id="settings_director" style="width:100%;">
+              </div>
+              <div class="setting-row col">
+                <div class="setting-label">Production Company</div>
+                <input class="form-input" id="settings_company" style="width:100%;">
+              </div>
+              <div class="setting-row col">
+                <div class="setting-label">Start Date</div>
+                <input class="form-input" id="settings_startdate" type="date" style="width:100%;">
+              </div>
+            </div>
+
+            <!-- DISPLAY -->
+            <div class="settings-card">
+              <div class="settings-card-title">Display Options</div>
+              <div class="setting-row">
+                <div><div class="setting-label">Color-code by type</div><div class="setting-sub">INT/EXT Day/Night get distinct strip colors</div></div>
+                <label class="toggle"><input type="checkbox" checked onchange="refresh()"><div class="toggle-slider"></div></label>
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-label">Show page counts</div><div class="setting-sub">Display script pages on each strip</div></div>
+                <label class="toggle"><input type="checkbox" checked onchange="refresh()"><div class="toggle-slider"></div></label>
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-label">Show cast numbers</div><div class="setting-sub">Display cast IDs on each strip</div></div>
+                <label class="toggle"><input type="checkbox" checked onchange="refresh()"><div class="toggle-slider"></div></label>
+              </div>
+              <div class="setting-row">
+                <div><div class="setting-label">Show banners</div><div class="setting-sub">Display production banners between groups</div></div>
+                <label class="toggle"><input type="checkbox" checked onchange="refresh()"><div class="toggle-slider"></div></label>
+              </div>
+            </div>
+
+            <!-- DANGER ZONE -->
+            <div class="settings-card" style="border-color:rgba(226,75,74,0.25);grid-column:1/-1;">
+              <div class="settings-card-title" style="color:var(--red);">Danger Zone</div>
+              <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:200px;">
+                  <div class="setting-label" style="margin-bottom:4px;">Clear all scenes</div>
+                  <div class="setting-sub" style="margin-bottom:10px;">Removes all scenes from the schedule</div>
+                  <button class="btn danger" onclick="clearScenes()">Clear All Scenes</button>
+                </div>
+                <div style="flex:1;min-width:200px;">
+                  <div class="setting-label" style="margin-bottom:4px;">Reset production</div>
+                  <div class="setting-sub" style="margin-bottom:10px;">Start completely fresh — all data lost</div>
+                  <button class="btn danger" onclick="resetProduction()">Reset Production</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><span class="stat-label">Scenes</span><span class="stat-value" id="statScenes">0</span></div>
+    <div class="stat-item"><span class="stat-label">Shoot Days</span><span class="stat-value" id="statDays">0</span></div>
+    <div class="stat-item"><span class="stat-label">EXT</span><span class="stat-value" id="statExt">0</span></div>
+    <div class="stat-item"><span class="stat-label">INT</span><span class="stat-value" id="statInt">0</span></div>
+    <div class="stat-item"><span class="stat-label">Night</span><span class="stat-value" id="statNight">0</span></div>
+    <div class="stat-item"><span class="stat-label">Cast</span><span class="stat-value" id="statCast">0</span></div>
+    <div class="stat-item"><span class="stat-label">Locations</span><span class="stat-value" id="statLocs">0</span></div>
+    <div class="stat-item"><span class="stat-label" id="prodTitleStat" style="color:var(--accent);">—</span></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+let production = { title:'', director:'', company:'', startDate:'', shootDays:[] };
+let allScenes  = [];
+let allCast    = [];
+let banners    = {};
+let nextId     = 1;
+
+let filterSearch='', filterTypeVal='', filterDayVal=null, filterLocVal=null, filterCastVal=null;
+let selectedId=null, detailOpen=false;
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+
+const TYPE_CLASS  = {'EXT/DAY':'type-ext','INT/DAY':'type-int','EXT/NIGHT':'type-night','INT/NIGHT':'type-night'};
+const BADGE_CLASS = {'EXT/DAY':'badge-ext','INT/DAY':'badge-int','EXT/NIGHT':'badge-night','INT/NIGHT':'badge-night'};
+const ELEM_COLORS = ['#E8C96A','#90C53A','#7BB8F0','#AFA9EC','#F09595','#1D9E75','#BA7517','#D4537E'];
+const DAY_COLORS  = ['#7BB8F0','#90C53A','#E8C96A','#F09595','#AFA9EC','#1D9E75','#EF9F27','#D4537E','#F0997B','#B5D4F4'];
+const PRESETS     = [
+  {hex:'#C9A84C',name:'Gold'},   {hex:'#E24B4A',name:'Red'},
+  {hex:'#378ADD',name:'Blue'},   {hex:'#639922',name:'Green'},
+  {hex:'#7F77DD',name:'Purple'}, {hex:'#1D9E75',name:'Teal'},
+  {hex:'#EF9F27',name:'Amber'},  {hex:'#D4537E',name:'Pink'},
+  {hex:'#ffffff',name:'White'},  {hex:'#aaaaaa',name:'Silver'},
+];
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'treliazori_autosave';
+const PROJECTS_KEY = 'treliazori_projects';
+
+function getState(){
+  return { production, allScenes, allCast, banners, nextId,
+    accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() };
+}
+
+function loadState(state){
+  production = state.production || production;
+  allScenes  = state.allScenes  || [];
+  allCast    = state.allCast    || [];
+  banners    = state.banners    || {};
+  nextId     = state.nextId     || (allScenes.length ? Math.max(...allScenes.map(s=>s.id))+1 : 1);
+  if(state.accent) applyAccent(state.accent);
+}
+
+function autoSave(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(getState())); flashSaved(); } catch(e){}
+}
+
+let _saveTimer=null;
+function scheduleAutoSave(){ clearTimeout(_saveTimer); _saveTimer=setTimeout(autoSave,800); }
+
+function flashSaved(){
+  const b=document.getElementById('autosaveBadge');
+  if(!b) return;
+  b.style.display='inline-block';
+  clearTimeout(b._t);
+  b._t=setTimeout(()=>{b.style.display='none';},2200);
+}
+
+function saveProject(){
+  const name = production.title || 'Untitled';
+  const ts = new Date().toLocaleString();
+  const projects = loadProjects();
+  const idx = projects.findIndex(p=>p.name===name);
+  const entry = { name, savedAt: ts, state: getState() };
+  if(idx>=0) projects[idx]=entry; else projects.unshift(entry);
+  try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects)); autoSave(); alert(`Project "${name}" saved!`); } catch(e){ alert('Save failed — storage may be full.'); }
+}
+
+function loadProjects(){
+  try { return JSON.parse(localStorage.getItem(PROJECTS_KEY)||'[]'); } catch(e){ return []; }
+}
+
+function loadProject(name){
+  const projects=loadProjects();
+  const p=projects.find(x=>x.name===name);
+  if(!p) return;
+  if(!confirm(`Load "${name}"? Unsaved changes will be lost.`)) return;
+  loadState(p.state);
+  const short=production.title.length>16?production.title.slice(0,16)+'…':production.title;
+  document.getElementById('appTitle').innerHTML=short.toUpperCase()+'<span> / Scheduling</span>';
+  document.getElementById('sidebarTitle').textContent=production.title;
+  document.getElementById('prodTitleStat').textContent=production.title;
+  const sd=document.getElementById('settings_title'); if(sd) sd.value=production.title;
+  const sdd=document.getElementById('settings_director'); if(sdd) sdd.value=production.director;
+  const sdc=document.getElementById('settings_company'); if(sdc) sdc.value=production.company;
+  const sdx=document.getElementById('settings_startdate'); if(sdx) sdx.value=production.startDate;
+  buildPresets('mainPresets');
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('mainApp').style.display='flex';
+  closeModal(); refresh();
+}
+
+function deleteProject(name, e){
+  e.stopPropagation();
+  if(!confirm(`Delete saved project "${name}"?`)) return;
+  const projects=loadProjects().filter(p=>p.name!==name);
+  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  openProjectManager();
+}
+
+function openProjectManager(){
+  const projects=loadProjects();
+  const mc=document.getElementById('modalContent');
+  const listHtml = projects.length===0
+    ? '<div style="color:var(--muted);font-size:12px;padding:12px 0;">No saved projects yet.</div>'
+    : projects.map(p=>`<div class="proj-item" onclick="loadProject('${p.name.replace(/'/g,"\\'")}')"><div><div class="proj-item-name">${p.name}</div><div class="proj-item-meta">Saved: ${p.savedAt}</div></div><button class="proj-item-del" onclick="deleteProject('${p.name.replace(/'/g,"\\'")}',event)" title="Delete">✕</button></div>`).join('');
+  mc.innerHTML=`<div class="modal-title">PROJECTS</div><div class="proj-list">${listHtml}</div><div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Projects are saved to this browser. Use Export PDF to share externally.</div><div class="modal-footer"><button class="btn" onclick="closeModal()">Close</button>${production.title?`<button class="btn primary" onclick="saveProject();openProjectManager()">Save Current</button>`:''}</div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+// ─── PDF EXPORT ───────────────────────────────────────────────────────────────
+function exportBoard(){
+  // Update print header
+  const ph=document.getElementById('printHeader');
+  const pt=document.getElementById('printTitle');
+  const pm=document.getElementById('printMeta');
+  if(pt) pt.textContent=production.title||'Untitled Production';
+  if(pm){
+    const parts=[];
+    if(production.director) parts.push('Dir: '+production.director);
+    if(production.company)  parts.push(production.company);
+    parts.push(allScenes.length+' scenes · '+production.shootDays.length+' shoot days · '+allCast.length+' cast');
+    parts.push('Printed: '+new Date().toLocaleString());
+    pm.textContent=parts.join('  |  ');
+  }
+  // Ensure stripboard tab is visible
+  switchTab('stripboard');
+  showAll();
+  setTimeout(()=>{ window.print(); },150);
+}
+
+// ─── COLOR SYSTEM ─────────────────────────────────────────────────────────────
+function hexToRgb(hex) {
+  hex = hex.replace('#','');
+  if(hex.length===3) hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);
+  return `${(n>>16)&255},${(n>>8)&255},${n&255}`;
+}
+
+function applyAccent(hex) {
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  const rgb = hexToRgb(hex);
+  const r=document.documentElement;
+  r.style.setProperty('--accent', hex);
+  r.style.setProperty('--accent-rgb', rgb);
+  r.style.setProperty('--border', `rgba(${rgb},0.25)`);
+  r.style.setProperty('--border-strong', `rgba(${rgb},0.6)`);
+  // Sync all controls
+  const mcp=document.getElementById('mainColorPicker');
+  const mf =document.getElementById('mainSwatchFill');
+  const hi =document.getElementById('hexInput');
+  const sp =document.getElementById('setup_color');
+  const ssw=document.getElementById('setup_swatch');
+  const shx=document.getElementById('setup_hex');
+  if(mcp) mcp.value=hex;
+  if(mf)  mf.style.background=hex;
+  if(hi)  hi.value=hex;
+  if(sp)  sp.value=hex;
+  if(ssw) ssw.style.background=hex;
+  if(shx) shx.value=hex;
+  updatePresetActive(hex);
+  refresh();
+}
+
+function applyAccentHex(val) { if(/^#[0-9a-fA-F]{6}$/.test(val)) applyAccent(val); }
+function previewAccent(hex)  { applyAccent(hex); }
+function previewAccentHex(val){ if(/^#[0-9a-fA-F]{6}$/.test(val)) applyAccent(val); }
+
+function buildPresets(id) {
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.innerHTML=PRESETS.map(p=>`<div class="preset-dot" style="background:${p.hex}" title="${p.name}" onclick="applyAccent('${p.hex}')"></div>`).join('');
+}
+
+function updatePresetActive(hex) {
+  document.querySelectorAll('.preset-dot').forEach(d=>{
+    const bg=d.style.background;
+    const isMatch = bg===hex || bg.replace(/\s/g,'')===hex;
+    d.classList.toggle('active-p', isMatch);
+  });
+}
+
+// ─── SETUP ────────────────────────────────────────────────────────────────────
+function startProduction() {
+  const title=document.getElementById('setup_title').value.trim();
+  if(!title){ document.getElementById('setup_err').textContent='Please enter a production title.'; document.getElementById('setup_title').focus(); return; }
+  production.title    =title;
+  production.director =document.getElementById('setup_director').value.trim();
+  production.company  =document.getElementById('setup_company').value.trim();
+  production.startDate=document.getElementById('setup_date').value;
+  const numDays=parseInt(document.getElementById('setup_days').value)||0;
+  const colorHex=document.getElementById('setup_color').value;
+  applyAccent(colorHex);
+  if(numDays>0&&production.startDate){
+    const start=new Date(production.startDate+'T12:00:00'); let cnt=0;
+    while(cnt<numDays){ const dow=start.getDay(); if(dow!==0&&dow!==6){ production.shootDays.push({num:cnt+1,date:start.toISOString().slice(0,10),label:fmtDate(new Date(start))}); cnt++; } start.setDate(start.getDate()+1); }
+    const sd=new Date(production.startDate+'T12:00:00'); calYear=sd.getFullYear(); calMonth=sd.getMonth();
+  } else if(numDays>0){
+    for(let i=1;i<=numDays;i++) production.shootDays.push({num:i,date:'',label:`Day ${i}`});
+  }
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('mainApp').style.display='flex';
+  const short=title.length>16?title.slice(0,16)+'…':title;
+  document.getElementById('appTitle').innerHTML=short.toUpperCase()+'<span> / Scheduling</span>';
+  document.getElementById('sidebarTitle').textContent=title;
+  document.getElementById('prodTitleStat').textContent=title;
+  document.getElementById('settings_title').value=title;
+  document.getElementById('settings_director').value=production.director;
+  document.getElementById('settings_company').value=production.company;
+  document.getElementById('settings_startdate').value=production.startDate;
+  buildPresets('mainPresets');
+  renderSidebar(); refresh(); scheduleAutoSave();
+}
+
+function fmtDate(d){ return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+function renderSidebar(){
+  const daysEl=document.getElementById('sidebarDays');
+  daysEl.innerHTML=production.shootDays.length===0?'<div class="sidebar-empty">No shoot days yet</div>':
+    production.shootDays.map((sd,i)=>{
+      const cnt=allScenes.filter(s=>s.day===sd.num).length;
+      return `<button class="sidebar-item" onclick="filterDay(${sd.num},this)"><div class="sidebar-dot" style="background:${DAY_COLORS[i%DAY_COLORS.length]}"></div>Day ${sd.num}${sd.date?' — '+sd.label:''}<span class="sidebar-count">${cnt}</span></button>`;
+    }).join('');
+  const locs=[...new Set(allScenes.map(s=>s.loc).filter(Boolean))];
+  document.getElementById('sidebarLocs').innerHTML=locs.length===0?'<div class="sidebar-empty">No locations yet</div>':
+    locs.map((loc,i)=>`<button class="sidebar-item" onclick="filterLoc(${JSON.stringify(loc)},this)"><div class="sidebar-dot" style="background:${ELEM_COLORS[i%ELEM_COLORS.length]}"></div>${loc}<span class="sidebar-count">${allScenes.filter(s=>s.loc===loc).length}</span></button>`).join('');
+  document.getElementById('sidebarCast').innerHTML=allCast.length===0?'<div class="sidebar-empty">No cast yet</div>':
+    allCast.map(c=>`<button class="sidebar-item" onclick="filterCastM(${c.num},this)"><div class="sidebar-dot" style="background:${c.color}"></div>${c.num} — ${c.character}</button>`).join('');
+}
+
+// ─── FILTER & RENDER ──────────────────────────────────────────────────────────
+function getFiltered(){
+  return allScenes.filter(s=>{
+    if(filterSearch&&!s.desc.toLowerCase().includes(filterSearch)&&!s.loc.toLowerCase().includes(filterSearch)&&!s.scene.includes(filterSearch)) return false;
+    if(filterTypeVal&&s.type!==filterTypeVal) return false;
+    if(filterDayVal!=null&&s.day!==filterDayVal) return false;
+    if(filterLocVal!=null&&s.loc!==filterLocVal) return false;
+    if(filterCastVal!=null&&!s.cast.includes(filterCastVal)) return false;
+    return true;
+  });
+}
+
+function renderStripboard(scenes){
+  const sb=document.getElementById('stripboard');
+  const hw=document.getElementById('stripHeaderWrap');
+  if(allScenes.length===0){
+    hw.style.display='none';
+    sb.innerHTML=`<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-title">No Scenes Yet</div><div class="empty-sub">Your stripboard is empty. Add your first scene to start building the schedule. You can also add shoot days and cast members first.</div><div class="empty-actions"><button class="btn primary" onclick="openModal('scene')">+ Add First Scene</button><button class="btn" onclick="openModal('day')">+ Add Shoot Day</button><button class="btn" onclick="openModal('cast')">+ Add Cast Member</button></div></div>`;
+    updateStats([]); renderSidebar(); return;
+  }
+  if(scenes.length===0){
+    hw.style.display='none';
+    sb.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No Results</div><div class="empty-sub">No scenes match your current filter.</div><div class="empty-actions"><button class="btn" onclick="showAll()">Clear Filters</button></div></div>`;
+    return;
+  }
+  hw.style.display='block';
+  const unassigned=scenes.filter(s=>!s.day||!production.shootDays.find(d=>d.num===s.day));
+  const assigned=scenes.filter(s=>s.day&&production.shootDays.find(d=>d.num===s.day));
+  const byDay={};
+  assigned.forEach(s=>{ if(!byDay[s.day])byDay[s.day]=[]; byDay[s.day].push(s); });
+  let html='';
+  if(unassigned.length>0){
+    html+=`<div class="day-group"><div class="day-header" style="border-left-color:rgba(255,255,255,0.15)"><div class="day-header-title" style="color:var(--muted)">UNSCHEDULED</div><span style="margin-left:auto;font-size:10px;color:var(--muted)">${unassigned.length} scenes</span></div>`;
+    unassigned.forEach(s=>html+=buildStrip(s));
+    html+='</div>';
+  }
+  Object.keys(byDay).map(Number).sort().forEach(dn=>{
+    const sd=production.shootDays.find(d=>d.num===dn);
+    const col=DAY_COLORS[(dn-1)%DAY_COLORS.length];
+    html+=`<div class="day-group"><div class="day-header" style="border-left-color:${col}"><div class="day-header-title">SHOOT DAY ${dn}</div>${sd&&sd.date?`<div class="day-header-date">${sd.label}</div>`:''}<span style="margin-left:auto;font-size:10px;color:var(--muted)">${byDay[dn].length} scenes</span><button class="btn ghost" style="font-size:10px;padding:2px 8px;" onclick="event.stopPropagation();openDayEdit(${dn})">Edit</button></div>`;
+    if(banners[dn]) html+=`<div class="strip banner-strip"><div class="strip-cell">${banners[dn]}</div></div>`;
+    byDay[dn].forEach(s=>html+=buildStrip(s));
+    html+='</div>';
+  });
+  sb.innerHTML=html; updateStats(scenes); renderSidebar();
+}
+
+function buildStrip(s){
+  const tc=TYPE_CLASS[s.type]||'type-day', bc=BADGE_CLASS[s.type]||'badge-day';
+  const sel=selectedId===s.id?' selected':'';
+  const castH=s.cast.map(cid=>{ const cm=allCast.find(c=>c.num===cid); return `<span style="color:${cm?cm.color:'var(--accent)'};font-weight:500">${cid}</span>`; }).join(' ');
+  return `<div class="strip ${tc}${sel}" onclick="selectScene(${s.id})"><div class="strip-cell strip-color-bar"></div><div class="strip-cell" style="font-weight:500;font-size:12px">${s.scene}</div><div class="strip-cell"><span class="badge ${bc}">${s.type}</span></div><div class="strip-cell strip-title">${s.desc}</div><div class="strip-cell" style="font-size:10px;color:var(--muted)">${s.loc||'—'}</div><div class="strip-cell" style="gap:4px">${castH}</div><div class="strip-cell">${s.pages||'—'}</div><div class="strip-cell">${s.day||'—'}</div></div>`;
+}
+
+function updateStats(sc){
+  document.getElementById('statScenes').textContent=sc.length;
+  document.getElementById('statDays').textContent=production.shootDays.length;
+  document.getElementById('statExt').textContent=sc.filter(s=>s.type&&s.type.startsWith('EXT')).length;
+  document.getElementById('statInt').textContent=sc.filter(s=>s.type&&s.type.startsWith('INT')).length;
+  document.getElementById('statNight').textContent=sc.filter(s=>s.type&&s.type.endsWith('NIGHT')).length;
+  document.getElementById('statCast').textContent=allCast.length;
+  document.getElementById('statLocs').textContent=[...new Set(allScenes.map(s=>s.loc).filter(Boolean))].length;
+  document.getElementById('totalCount').textContent=allScenes.length;
+}
+
+function refresh(){ renderStripboard(getFiltered()); }
+
+// ─── SELECTION ────────────────────────────────────────────────────────────────
+function selectScene(id){ selectedId=id; refresh(); const s=allScenes.find(x=>x.id===id); if(s)renderDetail(s); if(!detailOpen)toggleDetail(); }
+
+function renderDetail(s){
+  const bc=BADGE_CLASS[s.type]||'badge-day';
+  const castH=s.cast.map(cid=>{ const cm=allCast.find(c=>c.num===cid); return `<div class="cast-chip"><span class="cast-num">${cid}</span><span>${cm?cm.character:'#'+cid}</span></div>`; }).join('');
+  const elemH=(s.elements||[]).map((e,i)=>`<div class="element-item"><div class="element-dot" style="background:${ELEM_COLORS[i%ELEM_COLORS.length]}"></div>${e}</div>`).join('');
+  const sd=production.shootDays.find(d=>d.num===s.day);
+  document.getElementById('detailHeader').innerHTML=`<div class="detail-scene-num">SC. ${s.scene}</div><div class="detail-title">${s.desc}</div><div class="detail-sub"><span class="badge ${bc}">${s.type}</span><span>${s.loc||'—'}</span></div>`;
+  document.getElementById('detailBody').innerHTML=`<div class="detail-section"><div class="detail-label">Scene Info</div><div class="detail-grid"><div class="detail-field"><div class="detail-field-label">Pages</div><div class="detail-field-value">${s.pages||'—'}</div></div><div class="detail-field"><div class="detail-field-label">Shoot Day</div><div class="detail-field-value">${s.day?`Day ${s.day}${sd&&sd.date?' · '+sd.label:''}` :'Unscheduled'}</div></div><div class="detail-field"><div class="detail-field-label">Type</div><div class="detail-field-value">${s.type}</div></div><div class="detail-field"><div class="detail-field-label">Location</div><div class="detail-field-value" style="font-size:10px">${s.loc||'—'}</div></div></div></div><div class="detail-section"><div class="detail-label">Cast</div><div class="cast-chips">${castH||'<span style="color:var(--muted);font-size:11px">No cast assigned</span>'}</div></div><div class="detail-section"><div class="detail-label">Elements & Props</div><div class="element-list">${elemH||'<span style="color:var(--muted);font-size:11px">None listed</span>'}</div></div><div class="detail-section"><div class="detail-label">Notes</div><textarea class="notes-area" placeholder="Add production notes..." onchange="saveNote(${s.id},this.value)">${s.notes||''}</textarea></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;"><button class="btn" onclick="openEditModal(${s.id})">Edit Scene</button><button class="btn danger" onclick="deleteScene(${s.id})">Delete</button></div>`;
+}
+
+function saveNote(id,val){ const s=allScenes.find(x=>x.id===id); if(s){ s.notes=val; scheduleAutoSave(); } }
+function toggleDetail(){ detailOpen=!detailOpen; document.getElementById('detailPanel').classList.toggle('hidden',!detailOpen); document.getElementById('detailToggle').textContent=detailOpen?'Details ◀':'Details ▶'; }
+
+// ─── FILTERS ──────────────────────────────────────────────────────────────────
+function clearActive(){ document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active')); }
+function showAll(el){ clearActive(); if(el)el.classList.add('active'); else document.getElementById('sidebarAllBtn').classList.add('active'); filterDayVal=filterLocVal=filterCastVal=null; filterSearch=''; filterTypeVal=''; refresh(); }
+function filterDay(d,el){ clearActive(); if(el)el.classList.add('active'); filterDayVal=d; filterLocVal=filterCastVal=null; refresh(); }
+function filterLoc(loc,el){ clearActive(); if(el)el.classList.add('active'); filterLocVal=loc; filterDayVal=filterCastVal=null; refresh(); }
+function filterCastM(c,el){ clearActive(); if(el)el.classList.add('active'); filterCastVal=c; filterDayVal=filterLocVal=null; refresh(); }
+function filterStrips(val){ filterSearch=val.toLowerCase(); refresh(); }
+function filterType(val){ filterTypeVal=val; refresh(); }
+function setSortMode(m,btn){ document.querySelectorAll('#sortScript,#sortSched').forEach(b=>b.classList.remove('active')); if(btn)btn.classList.add('active'); if(m==='script')allScenes.sort((a,b)=>parseFloat(a.scene||0)-parseFloat(b.scene||0)); else allScenes.sort((a,b)=>(a.day||999)-(b.day||999)); refresh(); }
+
+// ─── MODALS ───────────────────────────────────────────────────────────────────
+function dayOpts(sel){ return '<option value="">Unscheduled</option>'+production.shootDays.map(d=>`<option value="${d.num}"${d.num===sel?' selected':''}>${d.date?d.label+` (Day ${d.num})`:`Day ${d.num}`}</option>`).join(''); }
+
+function openModal(type){
+  const mc=document.getElementById('modalContent');
+  if(type==='scene'){
+    mc.innerHTML=`<div class="modal-title">ADD NEW SCENE</div><div class="form-row"><div class="form-field"><div class="form-label">Scene #</div><input class="form-input" id="m_scene" placeholder="e.g. 42"></div><div class="form-field"><div class="form-label">Type</div><select class="form-input" id="m_type"><option>INT/DAY</option><option>INT/NIGHT</option><option>EXT/DAY</option><option>EXT/NIGHT</option></select></div></div><div class="form-field"><div class="form-label">Description</div><input class="form-input" id="m_desc" placeholder="Brief scene description..."></div><div class="form-row"><div class="form-field"><div class="form-label">Location</div><input class="form-input" id="m_loc" placeholder="e.g. CITY HALL INT"></div><div class="form-field"><div class="form-label">Pages</div><input class="form-input" id="m_pages" placeholder="e.g. 2⅜"></div></div><div class="form-row"><div class="form-field"><div class="form-label">Cast # (comma-sep)</div><input class="form-input" id="m_cast" placeholder="1,2,3"></div><div class="form-field"><div class="form-label">Shoot Day</div><select class="form-input" id="m_day">${dayOpts(null)}</select></div></div><div class="form-field"><div class="form-label">Elements / Props (comma-sep)</div><input class="form-input" id="m_elems" placeholder="Gun prop, Briefcase..."></div><div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="addScene()">Add Scene</button></div>`;
+  } else if(type==='day'){
+    mc.innerHTML=`<div class="modal-title">ADD SHOOT DAY</div><div class="form-row"><div class="form-field"><div class="form-label">Day #</div><input class="form-input" id="m_daynum" type="number" placeholder="${production.shootDays.length+1}"></div><div class="form-field"><div class="form-label">Date</div><input class="form-input" id="m_daydate" type="date"></div></div><div class="form-field"><div class="form-label">Primary Location</div><input class="form-input" id="m_dayloc" placeholder="e.g. Studio A"></div><div class="form-field"><div class="form-label">Notes</div><input class="form-input" id="m_daynotes" placeholder="Stunt day, night shoot, etc."></div><div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="addDay()">Add Shoot Day</button></div>`;
+  } else if(type==='banner'){
+    mc.innerHTML=`<div class="modal-title">ADD PRODUCTION BANNER</div><div class="form-field"><div class="form-label">Banner Text</div><input class="form-input" id="m_banner_text" placeholder="e.g. NIGHT SEQUENCE BLOCK"></div><div class="form-field"><div class="form-label">Attach to Shoot Day</div><select class="form-input" id="m_banner_day">${production.shootDays.map(d=>`<option value="${d.num}">Day ${d.num}${d.date?' — '+d.label:''}</option>`).join('')||'<option value="">No days yet — add a shoot day first</option>'}</select></div><div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="addBanner()">Add Banner</button></div>`;
+  } else if(type==='cast'){
+    const cols=['#E8C96A','#90C53A','#7BB8F0','#AFA9EC','#F09595','#1D9E75','#EF9F27','#D4537E'];
+    window._castColor=cols[allCast.length%cols.length];
+    mc.innerHTML=`<div class="modal-title">ADD CAST MEMBER</div><div class="form-row"><div class="form-field"><div class="form-label">Cast #</div><input class="form-input" id="m_castnum" type="number" placeholder="${allCast.length+1}"></div><div class="form-field"><div class="form-label">Character Name</div><input class="form-input" id="m_char" placeholder="e.g. ELENA"></div></div><div class="form-row"><div class="form-field"><div class="form-label">Actor Name</div><input class="form-input" id="m_actor" placeholder="Full name"></div><div class="form-field"><div class="form-label">Contact</div><input class="form-input" id="m_contact" placeholder="Phone or email"></div></div><div class="form-field"><div class="form-label">Color Tag</div><div style="display:flex;gap:8px;margin-top:6px;" id="castColorRow">${cols.map((c,i)=>`<div onclick="pickCastColor('${c}',this)" style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${i===allCast.length%cols.length?'white':'transparent'};transition:all 0.1s;"></div>`).join('')}</div></div><div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="addCast()">Add Cast Member</button></div>`;
+  }
+  document.getElementById('modal').classList.add('open');
+}
+
+function pickCastColor(hex,el){ window._castColor=hex; document.querySelectorAll('#castColorRow div').forEach(d=>d.style.borderColor='transparent'); el.style.borderColor='white'; }
+
+function openEditModal(id){
+  const s=allScenes.find(x=>x.id===id); if(!s)return;
+  const mc=document.getElementById('modalContent');
+  mc.innerHTML=`<div class="modal-title">EDIT SCENE ${s.scene}</div><div class="form-row"><div class="form-field"><div class="form-label">Scene #</div><input class="form-input" id="e_scene" value="${s.scene}"></div><div class="form-field"><div class="form-label">Type</div><select class="form-input" id="e_type">${['INT/DAY','INT/NIGHT','EXT/DAY','EXT/NIGHT'].map(t=>`<option${t===s.type?' selected':''}>${t}</option>`).join('')}</select></div></div><div class="form-field"><div class="form-label">Description</div><input class="form-input" id="e_desc" value="${s.desc}"></div><div class="form-row"><div class="form-field"><div class="form-label">Location</div><input class="form-input" id="e_loc" value="${s.loc}"></div><div class="form-field"><div class="form-label">Pages</div><input class="form-input" id="e_pages" value="${s.pages}"></div></div><div class="form-row"><div class="form-field"><div class="form-label">Cast (comma-sep)</div><input class="form-input" id="e_cast" value="${s.cast.join(',')}"></div><div class="form-field"><div class="form-label">Shoot Day</div><select class="form-input" id="e_day">${dayOpts(s.day)}</select></div></div><div class="form-field"><div class="form-label">Elements / Props (comma-sep)</div><input class="form-input" id="e_elems" value="${(s.elements||[]).join(', ')}"></div><div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveEdit(${id})">Save Changes</button></div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function openDayEdit(dn){
+  const sd=production.shootDays.find(d=>d.num===dn); if(!sd)return;
+  const mc=document.getElementById('modalContent');
+  mc.innerHTML=`<div class="modal-title">EDIT SHOOT DAY ${dn}</div><div class="form-row"><div class="form-field"><div class="form-label">Date</div><input class="form-input" id="ed_date" type="date" value="${sd.date||''}"></div><div class="form-field"><div class="form-label">Crew Call Time</div><input class="form-input" id="ed_call" placeholder="e.g. 06:00"></div></div><div class="form-field"><div class="form-label">Primary Location</div><input class="form-input" id="ed_loc" placeholder="Main set location"></div><div class="form-field"><div class="form-label">Special Requirements</div><input class="form-input" id="ed_notes" placeholder="Stunts, night shoot, VFX..."></div><div class="modal-footer"><button class="btn danger" onclick="removeDay(${dn})">Remove Day</button><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveDayEdit(${dn})">Save</button></div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+// ─── DATA ACTIONS ─────────────────────────────────────────────────────────────
+function addScene(){
+  const dv=document.getElementById('m_day').value;
+  allScenes.push({id:nextId++,scene:document.getElementById('m_scene').value||String(nextId-1),type:document.getElementById('m_type').value,desc:document.getElementById('m_desc').value||'New scene',loc:document.getElementById('m_loc').value||'',pages:document.getElementById('m_pages').value||'',cast:document.getElementById('m_cast').value.split(',').map(Number).filter(Boolean),day:dv?Number(dv):null,elements:document.getElementById('m_elems').value.split(',').map(x=>x.trim()).filter(Boolean),notes:''});
+  closeModal(); refresh(); scheduleAutoSave();
+}
+
+function saveEdit(id){
+  const s=allScenes.find(x=>x.id===id); if(!s)return;
+  const dv=document.getElementById('e_day').value;
+  s.scene=document.getElementById('e_scene').value; s.type=document.getElementById('e_type').value;
+  s.desc=document.getElementById('e_desc').value; s.loc=document.getElementById('e_loc').value;
+  s.pages=document.getElementById('e_pages').value; s.cast=document.getElementById('e_cast').value.split(',').map(Number).filter(Boolean);
+  s.day=dv?Number(dv):null; s.elements=document.getElementById('e_elems').value.split(',').map(x=>x.trim()).filter(Boolean);
+  closeModal(); refresh(); scheduleAutoSave(); if(selectedId===id)renderDetail(s);
+}
+
+function addDay(){
+  const num=Number(document.getElementById('m_daynum').value)||(production.shootDays.length+1);
+  const date=document.getElementById('m_daydate').value;
+  let label=`Day ${num}`; if(date){const d=new Date(date+'T12:00:00');label=fmtDate(d);}
+  if(!production.shootDays.find(d=>d.num===num)){production.shootDays.push({num,date,label});production.shootDays.sort((a,b)=>a.num-b.num);}
+  closeModal(); refresh(); scheduleAutoSave();
+}
+
+function saveDayEdit(dn){
+  const sd=production.shootDays.find(d=>d.num===dn); if(!sd)return;
+  sd.date=document.getElementById('ed_date').value;
+  if(sd.date){const d=new Date(sd.date+'T12:00:00');sd.label=fmtDate(d);}
+  closeModal(); refresh(); scheduleAutoSave();
+}
+
+function removeDay(dn){
+  if(!confirm(`Remove Day ${dn}? Scenes will become unscheduled.`))return;
+  production.shootDays=production.shootDays.filter(d=>d.num!==dn);
+  allScenes.forEach(s=>{if(s.day===dn)s.day=null;});
+  closeModal(); refresh(); scheduleAutoSave();
+}
+
+function addBanner(){
+  const text=document.getElementById('m_banner_text').value.trim();
+  const day=Number(document.getElementById('m_banner_day').value);
+  if(text&&day) banners[day]=text.toUpperCase();
+  closeModal(); refresh(); scheduleAutoSave();
+}
+
+function addCast(){
+  const num=Number(document.getElementById('m_castnum').value)||(allCast.length+1);
+  if(!allCast.find(c=>c.num===num)) allCast.push({num,character:document.getElementById('m_char').value.trim()||`Character ${num}`,actor:document.getElementById('m_actor').value.trim(),contact:document.getElementById('m_contact').value.trim(),color:window._castColor||'#E8C96A'});
+  closeModal(); refresh(); scheduleAutoSave();
+}
+
+function deleteScene(id){
+  if(!confirm('Delete this scene?'))return;
+  allScenes=allScenes.filter(s=>s.id!==id);
+  selectedId=null; if(detailOpen)toggleDetail(); refresh(); scheduleAutoSave();
+}
+
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function updateProductionInfo(){
+  production.title=document.getElementById('settings_title').value;
+  production.director=document.getElementById('settings_director').value;
+  production.company=document.getElementById('settings_company').value;
+  production.startDate=document.getElementById('settings_startdate').value;
+  const short=production.title.length>16?production.title.slice(0,16)+'…':production.title;
+  document.getElementById('appTitle').innerHTML=short.toUpperCase()+'<span> / Scheduling</span>';
+  document.getElementById('sidebarTitle').textContent=production.title;
+  document.getElementById('prodTitleStat').textContent=production.title;
+  scheduleAutoSave();
+}
+function clearScenes(){ if(!confirm('Clear all scenes?'))return; allScenes=[]; selectedId=null; if(detailOpen)toggleDetail(); refresh(); scheduleAutoSave(); }
+function resetProduction(){
+  if(!confirm('Reset everything? This will clear all data.'))return;
+  allScenes=[];allCast=[];banners={};production={title:'',director:'',company:'',startDate:'',shootDays:[]};
+  selectedId=null;detailOpen=false;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('setupScreen').style.display='flex';
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.nav-tab').forEach((b,i)=>b.classList.toggle('active',['stripboard','calendar','cast','reports','settings'][i]===tab));
+  document.getElementById('view-stripboard').classList.toggle('visible',tab==='stripboard');
+  ['calendar','cast','reports','settings'].forEach(v=>{document.getElementById(`view-${v}`).style.display=tab===v?'block':'none';});
+  if(tab==='calendar')renderCalendar();
+  if(tab==='cast')renderCastView();
+}
+
+// ─── CALENDAR ────────────────────────────────────────────────────────────────
+function calNav(dir){ calMonth+=dir; if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+function renderCalendar(){
+  document.getElementById('calMonthLabel').textContent=new Date(calYear,calMonth,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}).toUpperCase();
+  const firstDow=(new Date(calYear,calMonth,1).getDay()+6)%7, dIM=new Date(calYear,calMonth+1,0).getDate();
+  let html=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="cal-day-label">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) html+=`<div class="cal-cell" style="opacity:0.2;min-height:80px;"></div>`;
+  for(let d=1;d<=dIM;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const sd=production.shootDays.find(x=>x.date===ds);
+    const isOff=[0,6].includes(new Date(calYear,calMonth,d).getDay());
+    let ev='';
+    if(sd){ const sc=allScenes.filter(s=>s.day===sd.num); ev=sc.slice(0,3).map(s=>`<div class="cal-event" style="background:${DAY_COLORS[(sd.num-1)%DAY_COLORS.length]}">${s.scene}: ${(s.loc||'').split(' ')[0]||'—'}</div>`).join('')+(sc.length>3?`<div style="font-size:9px;color:var(--muted)">+${sc.length-3} more</div>`:'')+`<div style="font-size:9px;color:var(--accent);margin-top:3px;font-weight:600">Day ${sd.num}</div>`; }
+    html+=`<div class="cal-cell ${sd?'shoot-day':isOff?'off-day':''}"><div class="cal-date">${d}</div>${ev}${isOff&&!sd?`<div style="font-size:9px;color:var(--red)">Weekend</div>`:''}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+}
+
+// ─── CAST VIEW ────────────────────────────────────────────────────────────────
+function renderCastView(){
+  const el=document.getElementById('castViewContent');
+  if(allCast.length===0){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🎭</div><div class="empty-title">No Cast Members</div><div class="empty-sub">Add cast members to build your Day Out of Days chart.</div><div class="empty-actions"><button class="btn primary" onclick="openModal('cast')">+ Add Cast Member</button></div></div>`;return;}
+  const days=production.shootDays;
+  let html=`<table class="cast-table"><thead><tr><th>Cast #</th><th>Character</th><th>Actor</th>`;
+  days.slice(0,12).forEach(d=>html+=`<th>Day ${d.num}${d.date?`<br><span style="font-weight:400;color:var(--muted);font-size:10px">${d.label}</span>`:''}</th>`);
+  html+=`<th>Days</th><th>Scenes</th></tr></thead><tbody>`;
+  allCast.forEach(c=>{
+    const dOn=days.filter(d=>allScenes.some(s=>s.day===d.num&&s.cast.includes(c.num)));
+    html+=`<tr><td><span style="font-family:'Bebas Neue';font-size:16px;color:${c.color}">${c.num}</span></td><td style="font-weight:500">${c.character}</td><td style="color:var(--muted)">${c.actor||'—'}</td>`;
+    days.slice(0,12).forEach(d=>{const on=dOn.includes(d);html+=`<td><span class="avail-block" style="background:${on?c.color:'rgba(255,255,255,0.06)'};border:1px solid rgba(255,255,255,0.08)"></span>${on?'<span style="font-size:10px;color:var(--muted)"> W</span>':''}</td>`;});
+    html+=`<td style="font-family:'DM Mono';color:var(--accent)">${dOn.length}</td><td style="font-size:11px;color:var(--muted)">${allScenes.filter(s=>s.cast.includes(c.num)).length}</td></tr>`;
+  });
+  el.innerHTML=html+'</tbody></table>';
+}
+
+function showReport(n){ exportBoard(n); }
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+buildPresets('setup_presets');
+
+// Restore autosave on load
+(function(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const state = JSON.parse(raw);
+    if(!state||!state.production||!state.production.title) return;
+    if(!confirm(`Resume "${state.production.title}"?\n\nA previous session was found. Click OK to restore it, or Cancel to start fresh.`)) return;
+    loadState(state);
+    const title = production.title;
+    const short = title.length>16 ? title.slice(0,16)+'…' : title;
+    document.getElementById('appTitle').innerHTML = short.toUpperCase()+'<span> / Scheduling</span>';
+    document.getElementById('sidebarTitle').textContent = title;
+    document.getElementById('prodTitleStat').textContent = title;
+    const st=document.getElementById('settings_title'); if(st) st.value=title;
+    const sd=document.getElementById('settings_director'); if(sd) sd.value=production.director;
+    const sc=document.getElementById('settings_company'); if(sc) sc.value=production.company;
+    const ss=document.getElementById('settings_startdate'); if(ss) ss.value=production.startDate;
+    buildPresets('mainPresets');
+    document.getElementById('setupScreen').style.display='none';
+    document.getElementById('mainApp').style.display='flex';
+    renderSidebar(); refresh();
+  } catch(e){}
+})();
+</script>
+</body>
+</html>
